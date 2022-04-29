@@ -92,10 +92,17 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
     # determine incomplete years
     yr_counts = df.groupby(['tick', 'year'])['date'].nunique().reset_index().\
         rename(columns={'date': 'unique_dates'})
-    yrs_exclude = yr_counts.query('unique_dates < 260').reset_index()
+    max_yr = yr_counts['year'].max()
+    is_max_yr_partial = True if yr_counts[yr_counts.year==max_yr]['unique_dates'].values[0]<260 else False
+    yrs_exclude = yr_counts[(yr_counts.unique_dates < 260) & (yr_counts.year != max_yr)]
+    # yrs_exclude = yr_counts.query('unique_dates < 260').reset_index()
 
     dfco = df[~df.year.isin(yrs_exclude.year)]
     dfex = df[df.year.isin(yrs_exclude.year)]
+
+    dfco['daycntlabel'] = dfco['daycnt'] + 1
+    dfco['daycntlabel'] = np.where(dfco.daycntlabel % 20 == 0, (dfco.daycntlabel / 20 * 4).astype(int).astype(str) + " Wk",
+                                 dfco.daycntlabel.astype(str))
 
     view_dict = {
         'DoD % Chg Normalized':'norm',
@@ -104,16 +111,22 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
     }
 
     # ROOT PLOT
-    root_plot = px.line(dfco, x='daycnt', y=view_dict[root_view], color='year',
-                                 template=plot_settings.dockstreet_template)
-    root_plot.update_xaxes(showgrid=False)
+    root_plot = px.line(dfco, x='daycntlabel', y=view_dict[root_view], color='year',
+                                 template=plot_settings.dockstreet_template,
+                        labels={'daycntlabel':'Trading Weeks Elapsed', view_dict[root_view]:root_view, 'year':''})
+
+    root_plot.update_xaxes(type='category',
+                           showgrid=False,
+                           tickvals = ['4 Wk', '8 Wk', '12 Wk', '16 Wk', '20 Wk', '24 Wk', '28 Wk',
+                                       '32 Wk', '36 Wk', '40 Wk', '44 Wk', '48 Wk', '52 Wk']
+                           )
     root_plot.update_layout(plot_bgcolor='white',
                             legend_title="",
                             title=dict(font_size=20,
                                        x=0.03,
                                        y=.98,
                                        yref='container',
-                                       text=f"<b>{chosen_tick}: {root_view} trends by year</b>",
+                                       text=f"<b>{chosen_tick}: {root_view} Trends by Year</b>",
                                        font_color="#4c4c4c",
                                        xanchor='left'),
                             legend=dict(
@@ -125,7 +138,7 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
     st.plotly_chart(root_plot, use_container_width=True)
 
     with st.form("year_submit"):
-        similar_yrs = st.multiselect(label="Similar Years", options=sorted(dfco.year.unique().tolist())[::-1],
+        similar_yrs = st.multiselect(label="Similar Years", options=sorted(dfco.year.unique().tolist())[::-1][1:],
                        default=[])
         st.form_submit_button('Calculate')
 
@@ -136,16 +149,21 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
         nexts = dfco[dfco.year.isin(nextyrs)]
         avgs = nexts.groupby('daycnt')[view_dict[result_view]].mean().to_frame().reset_index()
 
-        result_plot = px.line(avgs, x='daycnt', y=view_dict[result_view],
-                              template=plot_settings.dockstreet_template)
-        result_plot.update_xaxes(showgrid=False)
+        result_plot = px.line(avgs, x='daycntlabel', y=view_dict[result_view],
+                              template=plot_settings.dockstreet_template,
+                              labels={'daycntlabel':'Trading Weeks Elapsed', view_dict[result_view]:result_view})
+        result_plot.update_xaxes(type='category',
+                                 showgrid=False,
+                                 tickvals = ['4 Wk', '8 Wk', '12 Wk', '16 Wk', '20 Wk', '24 Wk', '28 Wk',
+                                             '32 Wk', '36 Wk', '40 Wk', '44 Wk', '48 Wk', '52 Wk']
+                                 )
         result_plot.update_layout(plot_bgcolor='white',
                                   legend_title="",
                                   title=dict(font_size=20,
                                            x=0.03,
                                            y=.98,
                                            yref='container',
-                                           text=f"<b>{chosen_tick}: {result_view} - subsequent years' average</b>",
+                                           text=f"<b>{chosen_tick}: {result_view} - Subsequent Years' Average</b>",
                                            font_color="#4c4c4c",
                                            xanchor='left'),
                                   legend=dict(
@@ -154,6 +172,9 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
 
         st.write('<br>', unsafe_allow_html=True)
         st.plotly_chart(result_plot, use_container_width=True)
+
+        if (is_max_yr_partial) & (max_yr-1 in similar_yrs):
+            st.write(f"Data for {max_yr} only includes {yr_counts[yr_counts.year==max_yr]['unique_dates'].values[0]} trading days.")
 
 def create_app_with_pages():
     # CREATE PAGES IN APP
