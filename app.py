@@ -147,7 +147,7 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
     else:
         nextyrs = [x + 1 for x in similar_yrs]
         nexts = dfco[dfco.year.isin(nextyrs)]
-        avgs = nexts.groupby('daycnt')[view_dict[result_view]].mean().to_frame().reset_index()
+        avgs = nexts.groupby(['daycnt','daycntlabel'])[view_dict[result_view]].mean().to_frame().reset_index()
 
         result_plot = px.line(avgs, x='daycntlabel', y=view_dict[result_view],
                               template=plot_settings.dockstreet_template,
