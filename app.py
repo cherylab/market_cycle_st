@@ -174,7 +174,6 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
         else:
             similar_yrs = []
 
-            st.write('blah')
 
         all_yrs = sorted(list(set(dec_yrs + pres_yrs + similar_yrs)))
 
@@ -182,7 +181,9 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
         oos = col4.checkbox(label="Show OOS Year", value=False)
         # oos_yr = col4.selectbox(label="OOS Year", options=all_yrs, index=0)
 
-        st.write(str(sorted(list(set(dec_yrs + pres_yrs + similar_yrs)))).strip('[]'), unsafe_allow_html=True)
+        st.write("<br>", unsafe_allow_html=True)
+        st.write(f"Years Chosen: {str(sorted(list(set(dec_yrs + pres_yrs + similar_yrs)))).strip('[]')}",
+                 unsafe_allow_html=True)
 
         st.form_submit_button('Calculate')
 
@@ -192,6 +193,9 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
         # to forward fill
         nextyrs = [x + 1 for x in all_yrs]
         nexts = dfco[dfco.year.isin(nextyrs)]
+
+        # FIGURE OUT BETTER LOGIC LATER
+        nexts = nexts[~nexts.daycntlabel.isin([261,262])]
 
         last_next = max(nextyrs)
         if oos:
