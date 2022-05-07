@@ -195,7 +195,9 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
         nexts = dfco[dfco.year.isin(nextyrs)]
 
         # FIGURE OUT BETTER LOGIC LATER
-        nexts = nexts[~nexts.daycntlabel.isin([261,262])]
+        nexts = nexts[~nexts.daycntlabel.isin(['261','262'])]
+
+        print(nexts)
 
         last_next = max(nextyrs)
         if oos:
