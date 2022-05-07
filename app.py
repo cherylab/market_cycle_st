@@ -156,10 +156,10 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
         # prescycle
         prescycle = col2.checkbox(label="Pres. Cycle Year", value=False)
         prescycle_yr = col2.number_input("Cycle Year", 1, 4)
-        pres_dict = {1: [2001, 2005, 2009, 2013, 2017, 2021, 2025],
-                     2: [2002, 2006, 2010, 2014, 2018, 2022, 2026],
-                     3: [2003, 2007, 2011, 2015, 2019, 2023, 2027],
-                     4: [2000, 2004, 2008, 2012, 2016, 2020, 2024]}
+        pres_dict = {1: [1993, 1997, 2001, 2005, 2009, 2013, 2017, 2021, 2025],
+                     2: [1994, 1998, 2002, 2006, 2010, 2014, 2018, 2022, 2026],
+                     3: [1995, 1999, 2003, 2007, 2011, 2015, 2019, 2023, 2027],
+                     4: [1992, 1996, 2000, 2004, 2008, 2012, 2016, 2020, 2024]}
         if prescycle:
             pres_yrs = sorted([x for x in possible_years if x in pres_dict[prescycle_yr]])
         else:
