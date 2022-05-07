@@ -137,21 +137,75 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
     st.write('<br>', unsafe_allow_html=True)
     st.plotly_chart(root_plot, use_container_width=True)
 
+    # TO DO
+    # do a forward fill so that all years chosen have the same number of days as the longest year
+
     with st.form("year_submit"):
-        similar_yrs = st.multiselect(label="Similar Years", options=sorted(dfco.year.unique().tolist())[::-1][1:],
+        possible_years = sorted(dfco.year.unique().tolist())[::-1][1:]
+
+        col1, space, col2, space1, col3, space2, col4 = st.columns((.5,.1,.5,.1,.5,.1,.5))
+
+        # decennial calculation
+        decennial = col1.checkbox(label="Decennial Years", value=False)
+        decennial_end = col1.number_input("Years Ending In", 0, 9)
+        if decennial:
+            dec_yrs = sorted([x for x in possible_years if int(str(x)[-1])==decennial_end])
+        else:
+            dec_yrs = []
+
+        # prescycle
+        prescycle = col2.checkbox(label="Pres. Cycle Year", value=False)
+        prescycle_yr = col2.number_input("Cycle Year", 1, 4)
+        pres_dict = {1: [2001, 2005, 2009, 2013, 2017, 2021, 2025],
+                     2: [2002, 2006, 2010, 2014, 2018, 2022, 2026],
+                     3: [2003, 2007, 2011, 2015, 2019, 2023, 2027],
+                     4: [2000, 2004, 2008, 2012, 2016, 2020, 2024]}
+        if prescycle:
+            pres_yrs = sorted([x for x in possible_years if x in pres_dict[prescycle_yr]])
+        else:
+            pres_yrs = []
+
+        # manually picked
+        manual = col3.checkbox(label="Chosen Years", value=False)
+        similar_yr = col3.multiselect(label="Similar Years", options=possible_years,
                        default=[])
+        if manual:
+            similar_yrs = sorted(similar_yr)
+        else:
+            similar_yrs = []
+
+            st.write('blah')
+
+        all_yrs = sorted(list(set(dec_yrs + pres_yrs + similar_yrs)))
+
+        # out of sample year
+        oos = col4.checkbox(label="Show OOS Year", value=False)
+        # oos_yr = col4.selectbox(label="OOS Year", options=all_yrs, index=0)
+
+        st.write(str(sorted(list(set(dec_yrs + pres_yrs + similar_yrs)))).strip('[]'), unsafe_allow_html=True)
+
         st.form_submit_button('Calculate')
 
-    if similar_yrs == []:
+    if all_yrs == []:
         st.warning('Please choose 1 or more years to view resulting plot.')
     else:
-        nextyrs = [x + 1 for x in similar_yrs]
+        # to forward fill
+        nextyrs = [x + 1 for x in all_yrs]
         nexts = dfco[dfco.year.isin(nextyrs)]
-        avgs = nexts.groupby(['daycnt','daycntlabel'])[view_dict[result_view]].mean().to_frame().reset_index()
 
-        result_plot = px.line(avgs, x='daycntlabel', y=view_dict[result_view],
+        last_next = max(nextyrs)
+        if oos:
+            nexts['category'] = np.where(nexts.year==last_next,last_next,'Other Yrs')
+        else:
+            nexts['category'] = 'All Years'
+
+        avgs = nexts.groupby(['daycnt','daycntlabel','category'])[view_dict[result_view]].mean().\
+            to_frame().reset_index()
+
+        result_plot = px.line(avgs, x='daycntlabel', y=view_dict[result_view], color='category',
                               template=plot_settings.dockstreet_template,
-                              labels={'daycntlabel':'Trading Weeks Elapsed', view_dict[result_view]:result_view})
+                              labels={'daycntlabel':'Trading Weeks Elapsed',
+                                      view_dict[result_view]:result_view})
         result_plot.update_xaxes(type='category',
                                  showgrid=False,
                                  tickvals = ['4 Wk', '8 Wk', '12 Wk', '16 Wk', '20 Wk', '24 Wk', '28 Wk',
@@ -159,6 +213,7 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
                                  )
         result_plot.update_layout(plot_bgcolor='white',
                                   legend_title="",
+                                  showlegend=False,
                                   title=dict(font_size=20,
                                            x=0.03,
                                            y=.98,
@@ -169,6 +224,9 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
                                   legend=dict(
                                       font=dict(size=14)
                                   ))
+
+        if oos:
+            result_plot.update_layout(showlegend=True)
 
         st.write('<br>', unsafe_allow_html=True)
         st.plotly_chart(result_plot, use_container_width=True)
