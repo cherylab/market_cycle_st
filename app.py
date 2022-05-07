@@ -197,13 +197,15 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
         # FIGURE OUT BETTER LOGIC LATER
         nexts = nexts[~nexts.daycntlabel.isin(['261','262'])]
 
-        print(nexts)
-
         last_next = max(nextyrs)
         if oos:
             nexts['category'] = np.where(nexts.year==last_next,last_next,'Other Yrs')
+            comp_years = sorted(nexts[nexts.category=='Other Yrs']['year'].unique().tolist())
         else:
             nexts['category'] = 'All Years'
+            comp_years = sorted(nexts.year.unique().tolist())
+
+        comp_years = [str(x) for x in comp_years]
 
         avgs = nexts.groupby(['daycnt','daycntlabel','category'])[view_dict[result_view]].mean().\
             to_frame().reset_index()
@@ -220,11 +222,13 @@ def cycle_page(GOOGLE_DRIVE_URL_DICT):
         result_plot.update_layout(plot_bgcolor='white',
                                   legend_title="",
                                   showlegend=False,
+                                  margin=dict(t=90),
                                   title=dict(font_size=20,
                                            x=0.03,
-                                           y=.98,
+                                           y=.96,
                                            yref='container',
-                                           text=f"<b>{chosen_tick}: {result_view} - Subsequent Years' Average</b>",
+                                           text=f"<b>{chosen_tick}: {result_view} - Subsequent Years' Average</b>" + \
+                                             f'<br><span style="font-size:16px;">Composite years: {", ".join(comp_years)}</span>',
                                            font_color="#4c4c4c",
                                            xanchor='left'),
                                   legend=dict(
